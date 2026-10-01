@@ -1,0 +1,375 @@
+{
+  "generated_at": "2026-10-01T10:58:41+00:00",
+  "dataset": {
+    "path": "online_retail_II.csv",
+    "sha256_first_1mb": "2a9278b063c5695206d05e2ca0fce0300505d0eb8ca858ac3aa19de6e114fa42",
+    "raw_rows": 1067371
+  },
+  "cleaning": {
+    "raw_rows": 1067371,
+    "after_missing_customer": 824364,
+    "after_cancel_adjust": 805620,
+    "after_qty_price": 805549,
+    "after_non_product": 802632,
+    "non_product_rows": 2917,
+    "non_product_codes": [
+      "ADJUST",
+      "ADJUST2",
+      "BANK CHARGES",
+      "C2",
+      "D",
+      "DOT",
+      "M",
+      "PADS",
+      "POST",
+      "SP1002",
+      "TEST001",
+      "TEST002"
+    ],
+    "non_product_revenue_share": 0.017414,
+    "customers": 5852,
+    "invoices": 36594,
+    "revenue": 17434449.979999997,
+    "date_min": "2009-12-01 07:45:00",
+    "date_max": "2011-12-09 12:50:00",
+    "missing_customer_rows": 243007,
+    "missing_customer_share": 0.22766872999172733,
+    "customers_lost_to_non_product": 26,
+    "rows_kept_share": 0.7519709641727197
+  },
+  "bounds": {
+    "first_month": "2009-12",
+    "last_complete_month": "2011-11",
+    "data_end": "2011-12-09 12:50:00"
+  },
+  "retention": {
+    "avg_curve": {
+      "0": 1.0,
+      "1": 0.20663925387756885,
+      "2": 0.21685626577351208,
+      "3": 0.21027310878526267,
+      "4": 0.1987692044029746,
+      "5": 0.1808557020852624,
+      "6": 0.17321601038720374,
+      "7": 0.17152186842408584,
+      "8": 0.1482518375299023,
+      "9": 0.142277273910955,
+      "10": 0.13677151158975653,
+      "11": 0.14139235238900558,
+      "12": 0.17926023333590527,
+      "13": 0.16578906923078163,
+      "14": 0.15760715883976195,
+      "15": 0.16213527729533328,
+      "16": 0.17497186520401767,
+      "17": 0.1732577561394204,
+      "18": 0.1694037632444282,
+      "19": 0.2155982697426797,
+      "20": 0.231734217358441
+    },
+    "avg_curve_n_cohorts": {
+      "0": 23,
+      "1": 22,
+      "2": 21,
+      "3": 20,
+      "4": 19,
+      "5": 18,
+      "6": 17,
+      "7": 16,
+      "8": 15,
+      "9": 14,
+      "10": 13,
+      "11": 12,
+      "12": 11,
+      "13": 10,
+      "14": 9,
+      "15": 8,
+      "16": 7,
+      "17": 6,
+      "18": 5,
+      "19": 4,
+      "20": 3
+    },
+    "biggest_dropoff": {
+      "month_index": 1,
+      "change_pp": -79.33607461224311
+    },
+    "n_cohorts": 24,
+    "n_fully_observed": 21
+  },
+  "repeat": {
+    "window_days": 90,
+    "repeat_window_mean": 0.43424753761967966,
+    "repeat_window_min": 0.15789473684210525,
+    "repeat_window_max": 0.6151419558359621,
+    "repeat_window_mean_true_new": 0.4252028167088655,
+    "repeat_window_min_true_new": 0.15789473684210525,
+    "repeat_window_max_true_new": 0.5544554455445545,
+    "n_fully_observed_true_new": 20,
+    "median_days_to_second": 57.0,
+    "same_day_share": 0.0684931506849315,
+    "km_repeated_by": {
+      "30": 0.2284720311841547,
+      "60": 0.3813051347772055,
+      "90": 0.47365485922722295,
+      "180": 0.6306279316693201,
+      "365": 0.7491526371711597
+    },
+    "n_customers": 5852,
+    "n_repeat_customers": 4234,
+    "repeat_ever_overall": 0.7235133287764867,
+    "repeat_ever_first_cohort": 0.9127234490010515,
+    "repeat_ever_last_cohort": 0.28272251308900526
+  },
+  "revenue": {
+    "repeat_share": 0.8629182546711262,
+    "first_total": 2386723.81,
+    "repeat_total": 15024229.08,
+    "median_repeat_revenue_per_repeat_customer": 1001.6300000000001,
+    "mean_repeat_revenue_per_repeat_customer": 3549.427864903165,
+    "avg_new_customers_per_month": 211.8695652173913,
+    "avg_new_customers_per_q4_month": 237.8,
+    "median_second_order_value": 271.225,
+    "median_first_order_value": 295.45000000000005,
+    "years_of_data": 2.020533880903491
+  },
+  "segments": {
+    "Region": {
+      "International": {
+        "n": 402,
+        "repeat_90d": 0.44029850746268656,
+        "avg_orders": 4.482587064676617,
+        "median_first_order_value": 406.82500000000005,
+        "revenue_per_customer": 3091.8219402985073,
+        "small_sample": false
+      },
+      "UK": {
+        "n": 3871,
+        "repeat_90d": 0.4321880650994575,
+        "avg_orders": 4.777060191165074,
+        "median_first_order_value": 284.05,
+        "revenue_per_customer": 1875.4771299405838,
+        "small_sample": false
+      }
+    },
+    "FirstOrderTier": {
+      "Low": {
+        "n": 1464,
+        "repeat_90d": 0.3483606557377049,
+        "avg_orders": 3.7206284153005464,
+        "median_first_order_value": 135.33999999999997,
+        "revenue_per_customer": 1008.7990163934427,
+        "small_sample": false
+      },
+      "Mid": {
+        "n": 1396,
+        "repeat_90d": 0.44340974212034384,
+        "avg_orders": 4.674785100286533,
+        "median_first_order_value": 295.14,
+        "revenue_per_customer": 1427.268452722063,
+        "small_sample": false
+      },
+      "High": {
+        "n": 1413,
+        "repeat_90d": 0.5102618542108988,
+        "avg_orders": 5.888888888888889,
+        "median_first_order_value": 572.3100000000001,
+        "revenue_per_customer": 3562.3042250530784,
+        "small_sample": false
+      }
+    },
+    "IsQ4Cohort": {
+      "False": {
+        "n": 3496,
+        "repeat_90d": 0.4502288329519451,
+        "avg_orders": 5.084954233409611,
+        "median_first_order_value": 292.07000000000005,
+        "revenue_per_customer": 2156.2208953089244,
+        "small_sample": false
+      },
+      "True": {
+        "n": 777,
+        "repeat_90d": 0.3552123552123552,
+        "avg_orders": 3.2393822393822393,
+        "median_first_order_value": 295.13,
+        "revenue_per_customer": 1241.6166537966537,
+        "small_sample": false
+      }
+    },
+    "CohortYear": {
+      "2010": {
+        "n": 3364,
+        "repeat_90d": 0.43222354340071345,
+        "avg_orders": 5.19589774078478,
+        "median_first_order_value": 294.27,
+        "revenue_per_customer": 2157.743391795482,
+        "small_sample": false
+      },
+      "2011": {
+        "n": 909,
+        "repeat_90d": 0.43564356435643564,
+        "avg_orders": 3.096809680968097,
+        "median_first_order_value": 284.55,
+        "revenue_per_customer": 1368.7960616061607,
+        "small_sample": false
+      }
+    }
+  },
+  "segment_gaps": {
+    "Region": {
+      "a": "UK",
+      "b": "International",
+      "n_a": 3871,
+      "n_b": 402,
+      "diff_pp": -0.8110442363229053,
+      "ci_low_pp": -5.9086235946198284,
+      "ci_high_pp": 4.286535121974017,
+      "distinguishable": false
+    },
+    "FirstOrderTier": {
+      "a": "High",
+      "b": "Low",
+      "n_a": 1413,
+      "n_b": 1464,
+      "diff_pp": 16.190119847319384,
+      "ci_low_pp": 12.61930105373217,
+      "ci_high_pp": 19.7609386409066,
+      "distinguishable": true
+    },
+    "IsQ4Cohort": {
+      "a": "True",
+      "b": "False",
+      "n_a": 777,
+      "n_b": 3496,
+      "diff_pp": -9.501647773958988,
+      "ci_low_pp": -13.249155699047327,
+      "ci_high_pp": -5.75413984887065,
+      "distinguishable": true
+    },
+    "CohortYear": {
+      "a": "2011",
+      "b": "2010",
+      "n_a": 909,
+      "n_b": 3364,
+      "diff_pp": 0.34200209557221917,
+      "ci_low_pp": -3.290200395378193,
+      "ci_high_pp": 3.974204586522631,
+      "distinguishable": false
+    }
+  },
+  "first_order_tier_bounds": {
+    "Low": {
+      "min": 1.3,
+      "max": 207.66,
+      "customers": 1951
+    },
+    "Mid": {
+      "min": 207.9,
+      "max": 373.53,
+      "customers": 1950
+    },
+    "High": {
+      "min": 373.74,
+      "max": 33167.8,
+      "customers": 1951
+    }
+  },
+  "sensitivity": {
+    "drop_non_product_true": {
+      "repeat_window_mean": 0.43424753761967966,
+      "km_repeated_by_window": 0.47365485922722295,
+      "median_days_to_second": 57.0,
+      "month1_retention": 0.20663925387756885,
+      "repeat_revenue_share": 0.8629182546711262,
+      "customers": 5852,
+      "revenue": 17434449.979999997
+    },
+    "drop_non_product_false": {
+      "repeat_window_mean": 0.4397912007501558,
+      "km_repeated_by_window": 0.47861258429992426,
+      "median_days_to_second": 56.0,
+      "month1_retention": 0.20843163313791083,
+      "repeat_revenue_share": 0.8629835080255803,
+      "customers": 5878,
+      "revenue": 17743429.178000003
+    },
+    "repeat_window_mean_diff_pp": 0.5543663130476162,
+    "threshold_pp": 1.0,
+    "material": false
+  },
+  "recommendations": [
+    {
+      "title": "Time a win-back message before the median return date",
+      "finding": "Median time to a second order is 57 days; 22.8% of customers have re-ordered by day 30 and 38.1% by day 60 (Kaplan-Meier) - about 51% of everyone who returns within a year.",
+      "action": "Send a win-back email with a relevant re-order prompt at roughly day 35-45, before the return curve flattens.",
+      "formula": "uplift_pp x avg_new_customers_per_month x 12 x median_repeat_revenue",
+      "inputs": {
+        "uplift_pp": 0.02,
+        "avg_new_customers_per_month": 211.8695652173913,
+        "months": 12,
+        "median_repeat_revenue": 1001.6300000000001
+      },
+      "estimate_gbp_per_year": 50931.58,
+      "assumptions": "The 2 pp uplift is illustrative, not measured. Median repeat revenue is computed over customers with 2+ orders and assumes converted customers behave like the median existing repeater. Gross revenue, not profit."
+    },
+    {
+      "title": "Lift small first baskets towards the mid tier",
+      "finding": "Repeat-within-90-days rises with first-order value: Low 34.8% (n=1,464), Mid 44.3% (n=1,396), High 51.0% (n=1,413) - a 16.2 pp spread.",
+      "action": "Give low-value first-time buyers a reason to build a bigger first basket (free-delivery threshold, starter bundles), and prioritise acquisition channels that bring mid/high first orders.",
+      "formula": "gap_closed_share x (mid_rate - low_rate) x low_tier_share x avg_new_customers_per_month x 12 x median_repeat_revenue",
+      "inputs": {
+        "gap_closed_share": 0.25,
+        "mid_rate": 0.44340974212034384,
+        "low_rate": 0.3483606557377049,
+        "low_tier_share": 0.34261642873859116,
+        "avg_new_customers_per_month": 211.8695652173913,
+        "months": 12,
+        "median_repeat_revenue": 1001.6300000000001
+      },
+      "estimate_gbp_per_year": 20732.58,
+      "assumptions": "Closing 25% of the Low-to-Mid gap is illustrative. The tier gap is a correlation: large first orders partly identify wholesale buyers, so a bigger basket may not cause a return visit. Gross revenue, not profit."
+    },
+    {
+      "title": "Give Q4-acquired customers their own follow-up",
+      "finding": "Customers first acquired in Oct-Dec repeat within 90 days at 35.5% (n=777) versus 45.0% (n=3,496) for other cohorts - 9.5 pp lower.",
+      "action": "Run a dedicated January-February re-activation sequence for Q4 first-time buyers (non-seasonal ranges, spring catalogue) instead of treating them like any other cohort.",
+      "formula": "gap_closed_share x (other_rate - q4_rate) x q4_new_customers_per_year x median_repeat_revenue",
+      "inputs": {
+        "gap_closed_share": 0.25,
+        "other_rate": 0.4502288329519451,
+        "q4_rate": 0.3552123552123552,
+        "q4_new_customers_per_year": 713.4000000000001,
+        "median_repeat_revenue": 1001.6300000000001
+      },
+      "estimate_gbp_per_year": 16973.81,
+      "assumptions": "Closing 25% of the gap is illustrative. Q4 new customers per year = average true-new Q4 cohort size x 3 months. Seasonal gift buyers may simply not need the product again within the window. Gross revenue, not profit."
+    },
+    {
+      "title": "Attack the month-1 cliff with a second-order prompt",
+      "finding": "The biggest drop-off is month 0 to 1: average retention falls 79.3 pp, to 20.7% in month 1, and then stays roughly flat.",
+      "action": "Put the retention budget into the first 30 days: an onboarding sequence and a time-limited second-order incentive, rather than spreading effort across later months.",
+      "formula": "uplift_pp x avg_new_customers_per_month x 12 x median_second_order_value",
+      "inputs": {
+        "uplift_pp": 0.02,
+        "avg_new_customers_per_month": 211.8695652173913,
+        "months": 12,
+        "median_second_order_value": 271.225
+      },
+      "estimate_gbp_per_year": 13791.44,
+      "assumptions": "The 2 pp uplift in month-1 retention is illustrative. Counts only the one extra order (median second-order value); it targets the same customers as recommendation 1, so the two overlap and must not be added. Gross revenue before any incentive cost."
+    },
+    {
+      "title": "Protect the repeat base that carries the revenue",
+      "finding": "Repeat orders generate 86.3% of revenue; 4,234 customers have ordered more than once.",
+      "action": "Treat existing repeat customers as the core asset: lapse alerts when a regular buyer goes quiet, account management for the largest, and service levels that prevent churn.",
+      "formula": "retained_share x repeat_customers x median_repeat_revenue / years_of_data",
+      "inputs": {
+        "retained_share": 0.01,
+        "repeat_customers": 4234,
+        "median_repeat_revenue": 1001.6300000000001,
+        "years_of_data": 2.020533880903491
+      },
+      "estimate_gbp_per_year": 20989.01,
+      "assumptions": "Value of keeping 1% of the repeat base from lapsing, at the median repeat revenue annualised over the observation period - illustrative. Wholesale accounts are worth far more than the median, so losing a large one costs much more. Gross revenue."
+    }
+  ]
+}
