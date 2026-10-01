@@ -1,0 +1,12 @@
+# Full analysis environment: pipeline, notebooks, figures and tests.
+-r requirements.txt
+matplotlib
+seaborn
+jupyter
+nbconvert
+nbformat
+ipykernel
+pyarrow
+pytest
+# Optional: only used to cross-check the Kaplan-Meier curve in notebook 03.
+# lifelines

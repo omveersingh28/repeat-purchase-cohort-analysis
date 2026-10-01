@@ -1,0 +1,5 @@
+# Dashboard runtime only (this is what Streamlit Community Cloud installs).
+streamlit
+pandas
+numpy
+plotly
