@@ -4,7 +4,7 @@
 UK online gift retailer (Online Retail II, 1.07M transaction rows), with a one-command pipeline, executed
 notebooks, a test suite and a deployable Streamlit dashboard.
 
-![Python](https://img.shields.io/badge/python-3.14-blue) ![tests](https://img.shields.io/badge/tests-14%20passing-brightgreen) ![dashboard](https://img.shields.io/badge/dashboard-Streamlit-red)
+![Python](https://img.shields.io/badge/python-3.14-blue) ![tests](https://img.shields.io/badge/tests-14%20passing-brightgreen) [![dashboard](https://img.shields.io/badge/dashboard-live%20on%20Streamlit-red)](https://repeat-purchase-cohort-analysis-7rlpgk6p45hdu3fo9gpx6h.streamlit.app/)
 
 > Every number in this README is produced by code and stored in [`reports/results.json`](reports/results.json).
 > Nothing is typed in by hand from memory; re-run `python -m src.run_pipeline` to regenerate all of it.
@@ -49,8 +49,7 @@ find which cohorts retain best, when customers stop coming back, and where reten
 
 ![Dashboard screenshot](reports/dashboard_screenshot.png)
 
-- **Live demo:** _not deployed yet — add your Streamlit Community Cloud URL here after following
-  [Deployment](#12-deployment)._
+- **Live demo:** [repeat-purchase-cohort-analysis-7rlpgk6p45hdu3fo9gpx6h.streamlit.app](https://repeat-purchase-cohort-analysis-7rlpgk6p45hdu3fo9gpx6h.streamlit.app/)
 - **Run locally:**
 
   ```bash
@@ -262,16 +261,19 @@ only for fully observed cohorts, and the survival curve is monotonic.
 
 ## 12. Deployment
 
-The dashboard is ready for **Streamlit Community Cloud**; it has not been deployed yet.
+The dashboard is deployed on **Streamlit Community Cloud**: https://repeat-purchase-cohort-analysis-7rlpgk6p45hdu3fo9gpx6h.streamlit.app/
 
-1. Make sure the latest commit is on GitHub (`git push`).
+To deploy your own copy:
+
+1. Fork or push this repository to your own GitHub account.
 2. Go to [share.streamlit.io](https://share.streamlit.io) → **New app**.
 3. Select the repository, branch `main`, and main file `streamlit_app.py`.
 4. Deploy. Streamlit Cloud installs `requirements.txt` automatically (streamlit, pandas, numpy, plotly only).
 
 `app_data/` is committed precisely so the deployed app needs no raw data: the 97 MB dataset stays out of the
 repository (`.gitignore`), and the dashboard makes no network calls. After changing the analysis, re-run the
-pipeline and commit the refreshed `app_data/` and `reports/`.
+pipeline, commit the refreshed `app_data/` and `reports/`, and push — Streamlit Cloud redeploys from `main`
+automatically.
 
 ## 13. Decisions & assumptions
 
@@ -323,7 +325,9 @@ Choices made while building, in the order they came up:
     come from project code.
 19. **Dashboard screenshot** is stored at `reports/dashboard_screenshot.png`, outside `reports/figures/`, because
     it is captured by hand and not rebuilt by the pipeline.
-20. **The dashboard has not been deployed.** The repository is on GitHub; deployment is left as a manual step.
+20. **Deployment.** The repository is on GitHub and the dashboard is deployed on Streamlit Community Cloud from
+    the `main` branch. `.devcontainer/` was added by Streamlit for GitHub Codespaces and is not used by the
+    pipeline.
 
 ## 14. Limitations
 
