@@ -279,3 +279,399 @@ def segment_table(customers: pd.DataFrame, bounds: dict, by: str, window: int = 
     })
     out["SmallSample"] = out["n"] < 100
     return out
+
+
+# =========================================================================== extensions
+# Everything below builds on the reference functions above. It adds presentation-ready tables
+# and the headline-number assembly shared by the pipeline, the notebooks and the dashboard, so
+# no notebook has to re-implement logic. None of it changes the semantics defined above.
+
+SEGMENT_COLUMNS = ("Region", "FirstOrderTier", "IsQ4Cohort", "CohortYear")
+KM_DAYS = (30, 60, 90, 180, 365)
+
+#: Assumptions used ONLY in the illustrative impact estimates. They are not measured from data.
+ILLUSTRATIVE_UPLIFT = 0.02      # +2 percentage points on a repeat / retention rate
+GAP_CLOSED_SHARE = 0.25         # share of an observed segment gap an intervention might close
+RETAINED_SHARE = 0.01           # 1 percentage point of the repeat-customer base kept from lapsing
+
+
+def waterfall_table(log: dict) -> pd.DataFrame:
+    """Row waterfall from the cleaning log: rows remaining and removed at each rule."""
+    steps = [("Raw rows", "raw_rows"),
+             ("Has a CustomerID", "after_missing_customer"),
+             ("Not a cancellation / adjustment", "after_cancel_adjust"),
+             ("Quantity > 0 and Price > 0", "after_qty_price"),
+             ("Product stock code (final)", "after_non_product")]
+    w = pd.DataFrame({"Step": [s for s, _ in steps], "RowsRemaining": [log[k] for _, k in steps]})
+    w["RowsRemoved"] = (-w["RowsRemaining"].diff()).fillna(0).astype(int)
+    w["PctOfRawRemoved"] = w["RowsRemoved"] / log["raw_rows"]
+    w["PctOfPreviousRemoved"] = (w["RowsRemoved"] / w["RowsRemaining"].shift(1)).fillna(0.0)
+    w["PctOfRawRemaining"] = w["RowsRemaining"] / log["raw_rows"]
+    return w
+
+
+def non_product_breakdown(lines_unfiltered: pd.DataFrame,
+                          product_re: re.Pattern = PRODUCT_CODE_RE) -> pd.DataFrame:
+    """Rows, revenue and customers per excluded stock code.
+
+    `lines_unfiltered` is the output of `clean(..., drop_non_product=False)`.
+    """
+    is_product = lines_unfiltered["StockCode"].astype(str).str.match(product_re)
+    npd = lines_unfiltered[~is_product]
+    out = (npd.groupby("StockCode")
+           .agg(Rows=("Invoice", "size"), Revenue=("Revenue", "sum"), Customers=("CustomerID", "nunique"))
+           .sort_values(["Rows", "Revenue"], ascending=False))
+    out["RevenueShare"] = out["Revenue"] / lines_unfiltered["Revenue"].sum()
+    return out
+
+
+def monthly_orders(orders: pd.DataFrame) -> pd.DataFrame:
+    """Orders, active customers and revenue per calendar month."""
+    return (orders.groupby("OrderMonth")
+            .agg(Orders=("Invoice", "nunique"), Customers=("CustomerID", "nunique"),
+                 Revenue=("Revenue", "sum")).sort_index())
+
+
+def top_countries(customers: pd.DataFrame, n: int = 10) -> pd.DataFrame:
+    """Top-n countries by customers (country of the first order), with revenue and share."""
+    t = (customers.groupby("Country")
+         .agg(Customers=("Orders", "size"), Orders=("Orders", "sum"), Revenue=("TotalRevenue", "sum"))
+         .sort_values(["Customers", "Revenue"], ascending=False))
+    t["CustomerShare"] = t["Customers"] / len(customers)
+    return t.head(n)
+
+
+def average_retention_table(pct: pd.DataFrame, first_month: pd.Period | None = None,
+                            min_cohorts: int = 3) -> pd.DataFrame:
+    """`average_retention_curve` plus the number of cohorts backing each month index."""
+    avg = average_retention_curve(pct, first_month=first_month, min_cohorts=min_cohorts)
+    p = pct.loc[pct.index > first_month] if first_month is not None else pct
+    n = p.notna().sum()
+    return pd.DataFrame({"mean_retention": avg, "n_cohorts": n.reindex(avg.index).astype(int)}
+                        ).rename_axis("month_index")
+
+
+def select_cohorts(summary: pd.DataFrame, bounds: dict, window: int = 90) -> list:
+    """Pick up to five cohorts for a readable curve chart, all derived from the data:
+    earliest true-new, one six months later, the first Q4 cohort, the largest fully observed
+    cohort of the final calendar year, and the latest fully observed cohort."""
+    first = bounds["first_month"]
+    true_new = summary[summary.index > first]
+    full = true_new[true_new["FullyObserved"]]
+    picks = []
+    if len(true_new):
+        picks.append(true_new.index.min())
+        if first + 6 in true_new.index:
+            picks.append(first + 6)
+        q4 = [cm for cm in true_new.index if cm.month in (10, 11, 12)]
+        if q4:
+            picks.append(min(q4))
+    if len(full):
+        last_year = full[[cm.year == full.index.max().year for cm in full.index]]
+        picks.append(last_year["CohortSize"].idxmax())
+        picks.append(full.index.max())
+    return sorted(set(picks))
+
+
+def days_to_second_hist(customers: pd.DataFrame, bin_width: int = 7, cap: int = 365) -> pd.DataFrame:
+    """Binned days-to-second-order for repeat customers.
+
+    Day 0 (same-day second invoice) is its own bin so the spike stays visible; the rest are
+    `bin_width`-day bins; everything at or beyond `cap` is pooled into a final 'cap+' bin.
+    """
+    d = customers.loc[customers["IsRepeat"], "DaysToSecond"].astype(int)
+    rows = [{"bin_start": 0, "bin_end": 0, "label": "0", "customers": int((d == 0).sum())}]
+    start = 1
+    while start < cap:
+        end = min(start + bin_width - 1, cap - 1)
+        rows.append({"bin_start": start, "bin_end": end, "label": f"{start}-{end}",
+                     "customers": int(d.between(start, end).sum())})
+        start = end + 1
+    rows.append({"bin_start": cap, "bin_end": int(max(d.max(), cap)), "label": f"{cap}+",
+                 "customers": int((d >= cap).sum())})
+    h = pd.DataFrame(rows)
+    h["share"] = h["customers"] / len(d) if len(d) else 0.0
+    return h
+
+
+def cumulative_revenue_per_customer(orders: pd.DataFrame, bounds: dict) -> pd.DataFrame:
+    """Cumulative revenue per cohort customer by cohort index (mean, so wholesale-skewed).
+    Cells whose calendar month is not fully observed are NaN, as in `retention_matrix`."""
+    last_complete = bounds["last_complete_month"]
+    o = orders[orders["CohortMonth"] <= last_complete]
+    rev = o.groupby(["CohortMonth", "CohortIndex"])["Revenue"].sum().unstack(1).sort_index()
+    rev = rev.reindex(columns=sorted(rev.columns)).fillna(0.0)
+    sizes = o.loc[o["OrderNumber"] == 1].groupby("CohortMonth").size()
+    cum = rev.cumsum(axis=1).divide(sizes, axis=0)
+    mask = pd.DataFrame([[cm + ci > last_complete for ci in cum.columns] for cm in cum.index],
+                        index=cum.index, columns=cum.columns)
+    return cum.mask(mask)
+
+
+def segments_long(customers: pd.DataFrame, bounds: dict, window: int = 90,
+                  by: tuple = SEGMENT_COLUMNS) -> pd.DataFrame:
+    """All segment tables stacked into one long frame (one row per segment value)."""
+    frames = []
+    for col in by:
+        t = segment_table(customers, bounds, col, window).reset_index()
+        t = t.rename(columns={col: "segment_value", f"Repeat{window}d": f"repeat_{window}d",
+                              "AvgOrders": "avg_orders", "MedianFirstOrderValue": "median_first_order_value",
+                              "RevenuePerCustomer": "revenue_per_customer", "SmallSample": "small_sample"})
+        t["segment_value"] = t["segment_value"].astype(str)
+        t.insert(0, "segment_type", col)
+        frames.append(t)
+    return pd.concat(frames, ignore_index=True)
+
+
+def tier_bounds(customers: pd.DataFrame) -> pd.DataFrame:
+    """Min / max first-order value (GBP) and customer count of each FirstOrderTier."""
+    return (customers.groupby("FirstOrderTier", observed=True)["FirstOrderValue"]
+            .agg(["min", "max", "size"]).rename(columns={"size": "customers"}))
+
+
+def proportion_gap(n_a: int, p_a: float, n_b: int, p_b: float, z: float = 1.96) -> dict:
+    """Difference between two independent proportions (a - b) in percentage points, with a
+    normal-approximation 95% confidence interval. `distinguishable` is False when the interval
+    spans zero, i.e. the gap is small relative to the sample sizes."""
+    diff = p_a - p_b
+    se = float(np.sqrt(p_a * (1 - p_a) / n_a + p_b * (1 - p_b) / n_b))
+    low, high = diff - z * se, diff + z * se
+    return {"diff_pp": float(diff * 100), "ci_low_pp": float(low * 100), "ci_high_pp": float(high * 100),
+            "distinguishable": bool(low > 0 or high < 0)}
+
+
+#: Segment pairs compared in the write-up: (segment column, value a, value b) -> gap = a - b.
+SEGMENT_PAIRS = (("Region", "UK", "International"), ("FirstOrderTier", "High", "Low"),
+                 ("IsQ4Cohort", "True", "False"), ("CohortYear", "max", "min"))
+
+
+def segment_gaps(segments: dict, window: int = 90) -> dict:
+    """Gap and confidence interval for each pair in SEGMENT_PAIRS, from the nested segments dict
+    produced by `headline_metrics`. 'max'/'min' pick the latest / earliest value of the segment."""
+    key, out = f"repeat_{window}d", {}
+    for seg, a, b in SEGMENT_PAIRS:
+        vals = segments.get(seg, {})
+        if a == "max" and vals:
+            a, b = max(vals), min(vals)
+        if a in vals and b in vals and a != b:
+            out[seg] = {"a": a, "b": b, "n_a": vals[a]["n"], "n_b": vals[b]["n"],
+                        **proportion_gap(vals[a]["n"], vals[a][key], vals[b]["n"], vals[b][key])}
+    return out
+
+
+def headline_metrics(orders: pd.DataFrame, customers: pd.DataFrame, bounds: dict,
+                     window: int = 90) -> dict:
+    """Every headline number, as plain Python types, in the `results.json` layout
+    (sections: retention, repeat, revenue, segments)."""
+    first_month, last_complete = bounds["first_month"], bounds["last_complete_month"]
+    col = f"Repeat{window}d"
+
+    R = retention_matrix(orders, bounds)
+    avg = average_retention_table(R["pct"], first_month=first_month)
+    drop = dropoff_table(avg["mean_retention"])
+    worst = int(drop["Change"].idxmin())
+
+    summ = cohort_summary(customers, bounds, window)
+    full = summ.loc[summ["FullyObserved"], col]
+    full_true_new = full[full.index > first_month]
+    true_new_sizes = summ.loc[summ.index > first_month, "CohortSize"]
+    q4_sizes = true_new_sizes[[cm.month in (10, 11, 12) for cm in true_new_sizes.index]]
+
+    km = survival_to_second(customers)
+    repeaters = customers[customers["IsRepeat"]]
+    rs = revenue_split(orders, bounds)
+    repeat_rev = orders.loc[orders["OrderNumber"] > 1].groupby("CustomerID")["Revenue"].sum()
+    second_orders = orders.loc[orders["OrderNumber"] == 2, "Revenue"]
+
+    seg = segments_long(customers, bounds, window)
+    segments = {
+        t: {r["segment_value"]: {"n": int(r["n"]), f"repeat_{window}d": float(r[f"repeat_{window}d"]),
+                                 "avg_orders": float(r["avg_orders"]),
+                                 "median_first_order_value": float(r["median_first_order_value"]),
+                                 "revenue_per_customer": float(r["revenue_per_customer"]),
+                                 "small_sample": bool(r["small_sample"])}
+            for _, r in g.iterrows()}
+        for t, g in seg.groupby("segment_type", sort=False)}
+
+    return {
+        "retention": {
+            "avg_curve": {str(int(k)): float(v) for k, v in avg["mean_retention"].items()},
+            "avg_curve_n_cohorts": {str(int(k)): int(v) for k, v in avg["n_cohorts"].items()},
+            "biggest_dropoff": {"month_index": worst,
+                                "change_pp": float(drop.loc[worst, "Change"] * 100)},
+            "n_cohorts": int(len(summ)),
+            "n_fully_observed": int(summ["FullyObserved"].sum()),
+        },
+        "repeat": {
+            "window_days": int(window),
+            "repeat_window_mean": float(full.mean()),
+            "repeat_window_min": float(full.min()),
+            "repeat_window_max": float(full.max()),
+            "repeat_window_mean_true_new": float(full_true_new.mean()),
+            "repeat_window_min_true_new": float(full_true_new.min()),
+            "repeat_window_max_true_new": float(full_true_new.max()),
+            "n_fully_observed_true_new": int(len(full_true_new)),
+            "median_days_to_second": float(repeaters["DaysToSecond"].median()),
+            "same_day_share": float((repeaters["DaysToSecond"] == 0).mean()),
+            "km_repeated_by": repeat_by_day(km, KM_DAYS),
+            "n_customers": int(len(customers)),
+            "n_repeat_customers": int(len(repeaters)),
+            "repeat_ever_overall": float(customers["IsRepeat"].mean()),
+            "repeat_ever_first_cohort": float(summ["RepeatEver"].iloc[0]),
+            "repeat_ever_last_cohort": float(summ["RepeatEver"].iloc[-1]),
+        },
+        "revenue": {
+            "repeat_share": float(rs["Repeat"].sum() / rs["Total"].sum()),
+            "first_total": float(rs["First"].sum()),
+            "repeat_total": float(rs["Repeat"].sum()),
+            "median_repeat_revenue_per_repeat_customer": float(repeat_rev.median()),
+            "mean_repeat_revenue_per_repeat_customer": float(repeat_rev.mean()),
+            "avg_new_customers_per_month": float(true_new_sizes.mean()),
+            "avg_new_customers_per_q4_month": float(q4_sizes.mean()) if len(q4_sizes) else float("nan"),
+            "median_second_order_value": float(second_orders.median()),
+            "median_first_order_value": float(customers["FirstOrderValue"].median()),
+            "years_of_data": float((bounds["data_end"] - customers["FirstOrderDate"].min()).days / 365.25),
+        },
+        "segments": segments,
+        "segment_gaps": segment_gaps(segments, window),
+    }
+
+
+def sensitivity_metrics(headline: dict, n_customers: int, revenue: float) -> dict:
+    """The handful of headline numbers compared between cleaning variants (trap 4)."""
+    return {
+        "repeat_window_mean": headline["repeat"]["repeat_window_mean"],
+        "km_repeated_by_window": headline["repeat"]["km_repeated_by"].get(
+            str(headline["repeat"]["window_days"]), float("nan")),
+        "median_days_to_second": headline["repeat"]["median_days_to_second"],
+        "month1_retention": headline["retention"]["avg_curve"].get("1", float("nan")),
+        "repeat_revenue_share": headline["revenue"]["repeat_share"],
+        "customers": int(n_customers),
+        "revenue": float(revenue),
+    }
+
+
+def build_recommendations(h: dict) -> list[dict]:
+    """Recommendations with quantified, illustrative impact — every input comes from `h`
+    (the output of `headline_metrics`) or from the labelled assumption constants above.
+
+    Estimates use the MEDIAN repeat revenue per repeat customer (wholesale buyers skew the
+    mean) and are gross revenue, not profit: there is no cost, margin or channel data.
+    """
+    rep, rev, ret, seg = h["repeat"], h["revenue"], h["retention"], h["segments"]
+    w = rep["window_days"]
+    key = f"repeat_{w}d"
+    new_pm = rev["avg_new_customers_per_month"]
+    med_rep = rev["median_repeat_revenue_per_repeat_customer"]
+    km = rep["km_repeated_by"]
+    recs = []
+
+    # 1. Win-back timing --------------------------------------------------------------
+    est = ILLUSTRATIVE_UPLIFT * new_pm * 12 * med_rep
+    recs.append({
+        "title": "Time a win-back message before the median return date",
+        "finding": (f"Median time to a second order is {rep['median_days_to_second']:.0f} days; "
+                    f"{km['30']:.1%} of customers have re-ordered by day 30 and {km['60']:.1%} by day 60 "
+                    f"(Kaplan-Meier) - about {km['60'] / km['365']:.0%} of everyone who returns within a year."),
+        "action": "Send a win-back email with a relevant re-order prompt at roughly day 35-45, "
+                  "before the return curve flattens.",
+        "formula": "uplift_pp x avg_new_customers_per_month x 12 x median_repeat_revenue",
+        "inputs": {"uplift_pp": ILLUSTRATIVE_UPLIFT, "avg_new_customers_per_month": new_pm,
+                   "months": 12, "median_repeat_revenue": med_rep},
+        "estimate_gbp_per_year": round(est, 2),
+        "assumptions": ("The 2 pp uplift is illustrative, not measured. Median repeat revenue is computed "
+                        "over customers with 2+ orders and assumes converted customers behave like the "
+                        "median existing repeater. Gross revenue, not profit."),
+    })
+
+    # 2. First-order value tier gap -----------------------------------------------------
+    tiers = seg.get("FirstOrderTier", {})
+    if {"Low", "Mid", "High"} <= set(tiers):
+        n_all = sum(t["n"] for t in tiers.values())
+        low_share = tiers["Low"]["n"] / n_all
+        gap = tiers["Mid"][key] - tiers["Low"][key]
+        est = GAP_CLOSED_SHARE * gap * low_share * new_pm * 12 * med_rep
+        recs.append({
+            "title": "Lift small first baskets towards the mid tier",
+            "finding": (f"Repeat-within-{w}-days rises with first-order value: Low {tiers['Low'][key]:.1%} "
+                        f"(n={tiers['Low']['n']:,}), Mid {tiers['Mid'][key]:.1%} (n={tiers['Mid']['n']:,}), "
+                        f"High {tiers['High'][key]:.1%} (n={tiers['High']['n']:,}) - a "
+                        f"{(tiers['High'][key] - tiers['Low'][key]) * 100:.1f} pp spread."),
+            "action": "Give low-value first-time buyers a reason to build a bigger first basket "
+                      "(free-delivery threshold, starter bundles), and prioritise acquisition channels "
+                      "that bring mid/high first orders.",
+            "formula": "gap_closed_share x (mid_rate - low_rate) x low_tier_share x "
+                       "avg_new_customers_per_month x 12 x median_repeat_revenue",
+            "inputs": {"gap_closed_share": GAP_CLOSED_SHARE, "mid_rate": tiers["Mid"][key],
+                       "low_rate": tiers["Low"][key], "low_tier_share": low_share,
+                       "avg_new_customers_per_month": new_pm, "months": 12,
+                       "median_repeat_revenue": med_rep},
+            "estimate_gbp_per_year": round(est, 2),
+            "assumptions": ("Closing 25% of the Low-to-Mid gap is illustrative. The tier gap is a correlation: "
+                            "large first orders partly identify wholesale buyers, so a bigger basket may not "
+                            "cause a return visit. Gross revenue, not profit."),
+        })
+
+    # 3. Q4 cohort weakness -------------------------------------------------------------
+    q4 = seg.get("IsQ4Cohort", {})
+    if {"True", "False"} <= set(q4):
+        gap = q4["False"][key] - q4["True"][key]
+        q4_per_year = rev["avg_new_customers_per_q4_month"] * 3
+        est = GAP_CLOSED_SHARE * gap * q4_per_year * med_rep
+        recs.append({
+            "title": "Give Q4-acquired customers their own follow-up",
+            "finding": (f"Customers first acquired in Oct-Dec repeat within {w} days at {q4['True'][key]:.1%} "
+                        f"(n={q4['True']['n']:,}) versus {q4['False'][key]:.1%} (n={q4['False']['n']:,}) for "
+                        f"other cohorts - {gap * 100:.1f} pp lower."),
+            "action": "Run a dedicated January-February re-activation sequence for Q4 first-time buyers "
+                      "(non-seasonal ranges, spring catalogue) instead of treating them like any other cohort.",
+            "formula": "gap_closed_share x (other_rate - q4_rate) x q4_new_customers_per_year x "
+                       "median_repeat_revenue",
+            "inputs": {"gap_closed_share": GAP_CLOSED_SHARE, "other_rate": q4["False"][key],
+                       "q4_rate": q4["True"][key], "q4_new_customers_per_year": q4_per_year,
+                       "median_repeat_revenue": med_rep},
+            "estimate_gbp_per_year": round(est, 2),
+            "assumptions": ("Closing 25% of the gap is illustrative. Q4 new customers per year = average "
+                            "true-new Q4 cohort size x 3 months. Seasonal gift buyers may simply not need the "
+                            "product again within the window. Gross revenue, not profit."),
+        })
+
+    # 4. Month 0 -> 1 cliff --------------------------------------------------------------
+    m1 = ret["avg_curve"].get("1")
+    if m1 is not None:
+        second = rev["median_second_order_value"]
+        est = ILLUSTRATIVE_UPLIFT * new_pm * 12 * second
+        recs.append({
+            "title": "Attack the month-1 cliff with a second-order prompt",
+            "finding": (f"The biggest drop-off is month {ret['biggest_dropoff']['month_index'] - 1} to "
+                        f"{ret['biggest_dropoff']['month_index']}: average retention falls "
+                        f"{abs(ret['biggest_dropoff']['change_pp']):.1f} pp, to {m1:.1%} in month 1, "
+                        "and then stays roughly flat."),
+            "action": "Put the retention budget into the first 30 days: an onboarding sequence and a "
+                      "time-limited second-order incentive, rather than spreading effort across later months.",
+            "formula": "uplift_pp x avg_new_customers_per_month x 12 x median_second_order_value",
+            "inputs": {"uplift_pp": ILLUSTRATIVE_UPLIFT, "avg_new_customers_per_month": new_pm,
+                       "months": 12, "median_second_order_value": second},
+            "estimate_gbp_per_year": round(est, 2),
+            "assumptions": ("The 2 pp uplift in month-1 retention is illustrative. Counts only the one extra "
+                            "order (median second-order value); it targets the same customers as recommendation 1, "
+                            "so the two overlap and must not be added. Gross revenue before any incentive cost."),
+        })
+
+    # 5. Repeat revenue concentration ----------------------------------------------------
+    est = RETAINED_SHARE * rep["n_repeat_customers"] * med_rep / rev["years_of_data"]
+    recs.append({
+        "title": "Protect the repeat base that carries the revenue",
+        "finding": (f"Repeat orders generate {rev['repeat_share']:.1%} of revenue; "
+                    f"{rep['n_repeat_customers']:,} customers have ordered more than once."),
+        "action": "Treat existing repeat customers as the core asset: lapse alerts when a regular buyer "
+                  "goes quiet, account management for the largest, and service levels that prevent churn.",
+        "formula": "retained_share x repeat_customers x median_repeat_revenue / years_of_data",
+        "inputs": {"retained_share": RETAINED_SHARE, "repeat_customers": rep["n_repeat_customers"],
+                   "median_repeat_revenue": med_rep, "years_of_data": rev["years_of_data"]},
+        "estimate_gbp_per_year": round(est, 2),
+        "assumptions": ("Value of keeping 1% of the repeat base from lapsing, at the median repeat revenue "
+                        "annualised over the observation period - illustrative. Wholesale accounts are worth "
+                        "far more than the median, so losing a large one costs much more. Gross revenue."),
+    })
+    return recs
