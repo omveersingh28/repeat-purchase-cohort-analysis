@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-10-01T10:58:41+00:00",
+  "generated_at": "2026-10-01T11:29:54+00:00",
   "dataset": {
     "path": "online_retail_II.csv",
     "sha256_first_1mb": "2a9278b063c5695206d05e2ca0fce0300505d0eb8ca858ac3aa19de6e114fa42",
@@ -35,7 +35,39 @@
     "missing_customer_rows": 243007,
     "missing_customer_share": 0.22766872999172733,
     "customers_lost_to_non_product": 26,
-    "rows_kept_share": 0.7519709641727197
+    "rows_kept_share": 0.7519709641727197,
+    "waterfall": [
+      {
+        "step": "Raw rows",
+        "rows_remaining": 1067371,
+        "rows_removed": 0,
+        "pct_of_raw_removed": 0.0
+      },
+      {
+        "step": "Has a CustomerID",
+        "rows_remaining": 824364,
+        "rows_removed": 243007,
+        "pct_of_raw_removed": 0.22766872999172733
+      },
+      {
+        "step": "Not a cancellation / adjustment",
+        "rows_remaining": 805620,
+        "rows_removed": 18744,
+        "pct_of_raw_removed": 0.017560904315369257
+      },
+      {
+        "step": "Quantity > 0 and Price > 0",
+        "rows_remaining": 805549,
+        "rows_removed": 71,
+        "pct_of_raw_removed": 6.651857695215627e-05
+      },
+      {
+        "step": "Product stock code (final)",
+        "rows_remaining": 802632,
+        "rows_removed": 2917,
+        "pct_of_raw_removed": 0.0027328829432315474
+      }
+    ]
   },
   "bounds": {
     "first_month": "2009-12",
@@ -114,6 +146,14 @@
       "180": 0.6306279316693201,
       "365": 0.7491526371711597
     },
+    "km_day_half_repeated": 100,
+    "weakest_true_new_cohort": "2010-12",
+    "strongest_true_new_cohort": "2011-07",
+    "q4_cohorts_fully_observed": [
+      "2010-10",
+      "2010-11",
+      "2010-12"
+    ],
     "n_customers": 5852,
     "n_repeat_customers": 4234,
     "repeat_ever_overall": 0.7235133287764867,
@@ -124,6 +164,9 @@
     "repeat_share": 0.8629182546711262,
     "first_total": 2386723.81,
     "repeat_total": 15024229.08,
+    "total_complete_cohorts": 17410952.89,
+    "first_cohort_total": 8518063.45,
+    "repeat_share_true_new": 0.7765187149341192,
     "median_repeat_revenue_per_repeat_customer": 1001.6300000000001,
     "mean_repeat_revenue_per_repeat_customer": 3549.427864903165,
     "avg_new_customers_per_month": 211.8695652173913,
@@ -341,7 +384,7 @@
         "median_repeat_revenue": 1001.6300000000001
       },
       "estimate_gbp_per_year": 16973.81,
-      "assumptions": "Closing 25% of the gap is illustrative. Q4 new customers per year = average true-new Q4 cohort size x 3 months. Seasonal gift buyers may simply not need the product again within the window. Gross revenue, not profit."
+      "assumptions": "Closing 25% of the gap is illustrative. The Q4 rate rests on only 3 fully observed Q4 cohorts (2010-10, 2010-11, 2010-12), i.e. a single season. Q4 new customers per year = average true-new Q4 cohort size x 3 months. Seasonal gift buyers may simply not need the product again within the window. Gross revenue, not profit."
     },
     {
       "title": "Attack the month-1 cliff with a second-order prompt",

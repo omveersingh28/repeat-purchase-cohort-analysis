@@ -1,5 +1,5 @@
 # Dashboard runtime only (this is what Streamlit Community Cloud installs).
-streamlit
-pandas
-numpy
-plotly
+streamlit>=1.64
+pandas>=2.3
+numpy>=2.0
+plotly>=7.1

@@ -476,8 +476,10 @@ def headline_metrics(orders: pd.DataFrame, customers: pd.DataFrame, bounds: dict
     full_true_new = full[full.index > first_month]
     true_new_sizes = summ.loc[summ.index > first_month, "CohortSize"]
     q4_sizes = true_new_sizes[[cm.month in (10, 11, 12) for cm in true_new_sizes.index]]
+    q4_full = [str(cm) for cm in full_true_new.index if cm.month in (10, 11, 12)]
 
     km = survival_to_second(customers)
+    half = km.loc[km["repeated_by"] >= 0.5, "day"]
     repeaters = customers[customers["IsRepeat"]]
     rs = revenue_split(orders, bounds)
     repeat_rev = orders.loc[orders["OrderNumber"] > 1].groupby("CustomerID")["Revenue"].sum()
@@ -514,6 +516,10 @@ def headline_metrics(orders: pd.DataFrame, customers: pd.DataFrame, bounds: dict
             "median_days_to_second": float(repeaters["DaysToSecond"].median()),
             "same_day_share": float((repeaters["DaysToSecond"] == 0).mean()),
             "km_repeated_by": repeat_by_day(km, KM_DAYS),
+            "km_day_half_repeated": int(half.iloc[0]) if len(half) else None,
+            "weakest_true_new_cohort": str(full_true_new.idxmin()),
+            "strongest_true_new_cohort": str(full_true_new.idxmax()),
+            "q4_cohorts_fully_observed": q4_full,
             "n_customers": int(len(customers)),
             "n_repeat_customers": int(len(repeaters)),
             "repeat_ever_overall": float(customers["IsRepeat"].mean()),
@@ -524,6 +530,10 @@ def headline_metrics(orders: pd.DataFrame, customers: pd.DataFrame, bounds: dict
             "repeat_share": float(rs["Repeat"].sum() / rs["Total"].sum()),
             "first_total": float(rs["First"].sum()),
             "repeat_total": float(rs["Repeat"].sum()),
+            "total_complete_cohorts": float(rs["Total"].sum()),
+            "first_cohort_total": float(rs["Total"].iloc[0]),
+            "repeat_share_true_new": float(rs["Repeat"].iloc[1:].sum() / rs["Total"].iloc[1:].sum())
+            if len(rs) > 1 else float("nan"),
             "median_repeat_revenue_per_repeat_customer": float(repeat_rev.median()),
             "mean_repeat_revenue_per_repeat_customer": float(repeat_rev.mean()),
             "avg_new_customers_per_month": float(true_new_sizes.mean()),
@@ -631,9 +641,11 @@ def build_recommendations(h: dict) -> list[dict]:
                        "q4_rate": q4["True"][key], "q4_new_customers_per_year": q4_per_year,
                        "median_repeat_revenue": med_rep},
             "estimate_gbp_per_year": round(est, 2),
-            "assumptions": ("Closing 25% of the gap is illustrative. Q4 new customers per year = average "
-                            "true-new Q4 cohort size x 3 months. Seasonal gift buyers may simply not need the "
-                            "product again within the window. Gross revenue, not profit."),
+            "assumptions": ("Closing 25% of the gap is illustrative. The Q4 rate rests on only "
+                            f"{len(rep['q4_cohorts_fully_observed'])} fully observed Q4 cohorts "
+                            f"({', '.join(rep['q4_cohorts_fully_observed'])}), i.e. a single season. Q4 new customers "
+                            "per year = average true-new Q4 cohort size x 3 months. Seasonal gift buyers may "
+                            "simply not need the product again within the window. Gross revenue, not profit."),
         })
 
     # 4. Month 0 -> 1 cliff --------------------------------------------------------------

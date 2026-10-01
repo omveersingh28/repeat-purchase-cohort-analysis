@@ -377,7 +377,8 @@ with tabs[4]:
                  f"{theme.SEGMENT_LABELS[narrowest].lower()} barely matters ({spread[narrowest]:.1f} pp)")
     st.caption(f"Repeat-within-{W}-days, true-new customers in fully observed cohorts only, so every customer had "
                f"the same {W} days to return. Sample sizes are shown on every bar; groups under 100 customers "
-               "are flagged.")
+               f"are flagged. The Q4 comparison rests on {len(rep['q4_cohorts_fully_observed'])} fully observed Q4 "
+               f"cohorts ({', '.join(rep['q4_cohorts_fully_observed'])}) - a single season.")
     for seg_type, g in segments.groupby("segment_type", sort=False):
         g = g.assign(label=[theme.segment_value_label(seg_type, v) for v in g["segment_value"]])
         left, right = st.columns([1, 1])

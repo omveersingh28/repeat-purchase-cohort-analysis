@@ -135,7 +135,11 @@ def run(data_path: Path | None = None, window: int = 90) -> dict:
                 "missing_customer_rows": missing_customer_rows,
                 "missing_customer_share": missing_customer_rows / log["raw_rows"],
                 "customers_lost_to_non_product": log_all["customers"] - log["customers"],
-                "rows_kept_share": log["after_non_product"] / log["raw_rows"]},
+                "rows_kept_share": log["after_non_product"] / log["raw_rows"],
+                "waterfall": [{"step": r["Step"], "rows_remaining": int(r["RowsRemaining"]),
+                               "rows_removed": int(r["RowsRemoved"]),
+                               "pct_of_raw_removed": float(r["PctOfRawRemoved"])}
+                              for _, r in waterfall.iterrows()]},
             "bounds": {"first_month": str(bounds["first_month"]),
                        "last_complete_month": str(bounds["last_complete_month"]),
                        "data_end": str(bounds["data_end"])},
