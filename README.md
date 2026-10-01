@@ -262,9 +262,9 @@ only for fully observed cohorts, and the survival curve is monotonic.
 
 ## 12. Deployment
 
-The dashboard is ready for **Streamlit Community Cloud**; it has not been deployed or pushed anywhere.
+The dashboard is ready for **Streamlit Community Cloud**; it has not been deployed yet.
 
-1. Create a GitHub repository and push this project (`git remote add origin …`, `git push -u origin main`).
+1. Make sure the latest commit is on GitHub (`git push`).
 2. Go to [share.streamlit.io](https://share.streamlit.io) → **New app**.
 3. Select the repository, branch `main`, and main file `streamlit_app.py`.
 4. Deploy. Streamlit Cloud installs `requirements.txt` automatically (streamlit, pandas, numpy, plotly only).
@@ -323,7 +323,7 @@ Choices made while building, in the order they came up:
     come from project code.
 19. **Dashboard screenshot** is stored at `reports/dashboard_screenshot.png`, outside `reports/figures/`, because
     it is captured by hand and not rebuilt by the pipeline.
-20. **Nothing was pushed or deployed.**
+20. **The dashboard has not been deployed.** The repository is on GitHub; deployment is left as a manual step.
 
 ## 14. Limitations
 
