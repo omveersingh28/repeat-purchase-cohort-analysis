@@ -219,7 +219,8 @@ far more. New-customer volume is the average true-new cohort size over complete 
 
 ## 10. How to run
 
-Tested on macOS (Apple Silicon) with **Python 3.14.7**.
+Tested on macOS (Apple Silicon) with **Python 3.14.7** — pandas 2.3.3 and 3.0.6, numpy 2.5.3, matplotlib 3.11.2,
+streamlit 1.64.0, plotly 7.1.0, pyarrow 25.0.1, pytest 9.1.1.
 
 ```bash
 # 1. Environment
@@ -276,21 +277,20 @@ pipeline and commit the refreshed `app_data/` and `reports/`.
 
 Choices made while building, in the order they came up:
 
-1. **Plan file location.** `PROJECT_PLAN.txt` was supplied outside the project folder; an identical copy is
-   kept in the repository as `PROJECT_PLAN.md`. The dataset was read where it was found and never moved,
+1. **Dataset left in place.** The dataset was read where it was found and never moved,
    renamed or modified.
 2. **Python version.** Built and tested on Python 3.14.7 (the `python3` on the machine).
-3. **Reference code used as written.** `core.py` contains the plan's reference implementation unchanged; all
+3. **Reference code used as written.** `core.py` contains the brief's reference implementation unchanged; all
    additions sit below a marked "extensions" divider (waterfall table, non-product breakdown, histogram bins,
    segment tables in long form, segment-gap confidence intervals, headline-metric assembly, recommendations).
 4. **One extra module, `src/retention/theme.py`.** Colours and fonts shared by the Matplotlib figures and the
    Plotly dashboard live in one dependency-free file so the two cannot drift apart.
-5. **Headline mean includes the first cohort, and says so.** The plan's acceptance number for
+5. **Headline mean includes the first cohort, and says so.** The project brief's acceptance number for
    repeat-within-90-days (43.4%, range 15.8%–61.5%) averages all 21 fully observed cohorts, *including* the
-   left-censored December 2009 cohort that the plan elsewhere says to exclude from averages. The acceptance
+   left-censored December 2009 cohort that the brief elsewhere says to exclude from averages. The acceptance
    number is kept as the headline and the true-new-only figure (42.5%, range 15.8%–55.4%, 20 cohorts) is
    reported beside it everywhere, rather than silently choosing one.
-6. **Voucher/sample codes named in the plan do not reach the product rule.** `DCGS*`, `gift_*`, `S`, `B` and
+6. **Voucher/sample codes named in the brief do not reach the product rule.** `DCGS*`, `gift_*`, `S`, `B` and
    `AMAZONFEE` rows exist in the raw file, but none of them has a `CustomerID`, so they are already removed by
    the missing-customer rule. The 12 codes the product rule actually removes are listed in trap 4.
 7. **Wording of the win-back finding.** The Kaplan–Meier day-60 reading (38.1%) is a share of *all* customers,
@@ -301,7 +301,7 @@ Choices made while building, in the order they came up:
    proportions decides whether a gap is called "real" or "no meaningful difference".
 10. **Cohorts for the curve chart are chosen by rule**, not by eye: earliest true-new, six months later, first
     Q4 cohort, largest fully observed cohort of the final year, latest fully observed.
-11. **No dual-axis charts.** The plan's "stacked bars plus repeat-share line" is drawn as two stacked panels
+11. **No dual-axis charts.** The brief's "stacked bars plus repeat-share line" is drawn as two stacked panels
     with a shared x-axis, because two y-scales on one plot invite a misleading visual correlation.
 12. **Heatmap month 0 is grey.** Month 0 is 100% by definition; leaving it out of the colour scale lets the
     scale resolve the 0–50% range where all the information is.
@@ -310,15 +310,15 @@ Choices made while building, in the order they came up:
 14. **Days-to-second histogram bins.** Day 0 is its own bin so the same-day spike stays visible, then 7-day
     bins, then one pooled 365+ bin.
 15. **Extra dashboard files.** `app_data/` also holds `retention_counts_uk.csv` and
-    `retention_counts_intl.csv` (beyond the plan's manifest) so hover counts are honest for the small
+    `retention_counts_intl.csv` (beyond the brief's file list) so hover counts are honest for the small
     international cohorts, and `segments.csv` carries a `small_sample` flag.
-16. **Extra keys in `results.json`.** The plan's schema is kept exactly; additional keys (true-new means,
+16. **Extra keys in `results.json`.** The brief's schema is kept exactly; additional keys (true-new means,
     repeat-ever by cohort, cleaning waterfall, segment gaps, tier bounds, extra sensitivity metrics) were added
     so that every README number has a source.
 17. **`lifelines` is installed in the dev environment** for the Kaplan–Meier cross-check. It currently pins
-    pandas below 3, so the dev environment runs pandas 2.3; the pipeline, tests and dashboard were also checked
-    on pandas 3.0 (the version a fresh `requirements.txt` install resolves to). It is optional and can be
-    deleted from `requirements-dev.txt`.
+    pandas below 3, so the dev environment runs pandas 2.3.3. The pipeline, tests and dashboard were also run on
+    pandas 3.0.6 (what a fresh `requirements.txt` install resolves to): every table, figure and number came out
+    identical. `lifelines` is optional and can be deleted from `requirements-dev.txt`.
 18. **A pytest warning filter** silences a NumPy deprecation raised inside pandas' `Period.end_time`; it does not
     come from project code.
 19. **Dashboard screenshot** is stored at `reports/dashboard_screenshot.png`, outside `reports/figures/`, because
@@ -344,7 +344,6 @@ Choices made while building, in the order they came up:
 
 ```
 .
-├── PROJECT_PLAN.md                 # the build specification
 ├── README.md
 ├── requirements.txt                # dashboard runtime: streamlit, pandas, numpy, plotly
 ├── requirements-dev.txt            # + matplotlib, seaborn, jupyter, nbconvert, pyarrow, pytest, lifelines
