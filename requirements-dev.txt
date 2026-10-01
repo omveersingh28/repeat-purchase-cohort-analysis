@@ -8,5 +8,5 @@ nbformat
 ipykernel
 pyarrow
 pytest
-# Optional: only used to cross-check the Kaplan-Meier curve in notebook 03.
-# lifelines
+# Optional: only used to cross-check the Kaplan-Meier curve in notebook 03 (safe to remove).
+lifelines
